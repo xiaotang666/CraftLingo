@@ -12,6 +12,10 @@ export type TranslationKey =
   | "auto.label"
   | "auto.tooltip"
   | "auto.hint"
+  | "auto.ai.label"
+  | "auto.ai.tooltip"
+  | "auto.ai.enabled"
+  | "auto.ai.disabled"
   | "auto.status.scanning"
   | "auto.status.translating"
   | "auto.status.retrying"
@@ -376,6 +380,7 @@ export type TranslationKey =
   | "settings.aboutIntro"
   | "settings.projectHome"
   | "settings.bilibiliHome"
+  | "settings.sponsor"
   | "settings.providerOpenai"
   | "splash.phase.settings"
   | "splash.phase.local"
@@ -526,6 +531,10 @@ const zhCn: TranslationMap = {
   "auto.label": "全自动模式",
   "auto.tooltip": "扫描后自动切换页面并依次执行翻译、重试、校对和打包",
   "auto.hint": "开启后，点击扫描会自动切换到每个阶段页面执行流程；运行期间会锁定操作，可随时中断。",
+  "auto.ai.label": "调用 AI",
+  "auto.ai.tooltip": "全自动模式翻译时是否调用 AI；关闭后仅使用词典，并输出待翻译文件与 ai翻译要求.txt",
+  "auto.ai.enabled": "调用 AI",
+  "auto.ai.disabled": "仅用词典",
   "auto.status.scanning": "全自动模式：正在扫描实例...",
   "auto.status.translating": "全自动模式：正在开始翻译...",
   "auto.status.retrying": "全自动模式：正在重试失败条目（第 {attempt}/{total} 次）...",
@@ -916,6 +925,7 @@ const zhCn: TranslationMap = {
   "settings.aboutIntro": "CraftLingo 是一个面向 Minecraft 整合包的桌面汉化工具，用于扫描模组语言文件、调用 LLM 翻译并生成可热重载测试的资源包。",
   "settings.projectHome": "项目主页",
   "settings.bilibiliHome": "问题反馈",
+  "settings.sponsor": "赞助支持",
   "splash.phase.settings": "设置",
   "splash.phase.local": "本地",
   "splash.phase.dictionary": "词典",

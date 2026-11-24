@@ -972,6 +972,10 @@ select {
   color: var(--text-secondary);
 }
 
+.auto-ai-toggle {
+  min-width: 132px;
+}
+
 .auto-mode-input:checked + .auto-mode-switch {
   border-color: var(--accent);
   background: var(--accent);

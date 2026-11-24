@@ -182,6 +182,7 @@ export interface JobsPageHandle {
   runAutoTranslation: (
     retryRounds: number,
     onRetry: (attempt: number, total: number) => void,
+    options?: { useLlm?: boolean },
   ) => Promise<TranslationJobListItem>;
   cancelActiveTask: () => Promise<void>;
 }
@@ -345,7 +346,7 @@ export const JobsPage = React.memo(forwardRef<JobsPageHandle, Props>(function Jo
     setEntryProgressVersion((v) => v + 1);
   });
 
-  async function startTranslationWorkflow(options: { throwOnError?: boolean } = {}): Promise<TranslationJobListItem | null> {
+  async function startTranslationWorkflow(options: { throwOnError?: boolean; useLlm?: boolean } = {}): Promise<TranslationJobListItem | null> {
     if (!scanSummary) return null;
     cancelledRef.current = false;
     const instPath = scanSummary.instancePath || settings.instancePath;
@@ -374,6 +375,7 @@ export const JobsPage = React.memo(forwardRef<JobsPageHandle, Props>(function Jo
       const result = await startTranslation(
         instPath, srcLang, tgtLang,
         scanSummary.jobId,
+        options.useLlm ?? true,
       );
       if (cancelledRef.current) return null;
       setTranslationResult(result);
@@ -517,10 +519,16 @@ export const JobsPage = React.memo(forwardRef<JobsPageHandle, Props>(function Jo
   }
 
   useImperativeHandle(ref, () => ({
-    runAutoTranslation: async (retryRounds, onRetry) => {
-      let job = await startTranslationWorkflow({ throwOnError: true });
+    runAutoTranslation: async (retryRounds, onRetry, options) => {
+      const useLlm = options?.useLlm ?? true;
+      let job = await startTranslationWorkflow({ throwOnError: true, useLlm });
       if (!job) {
         throw new Error(t(language, "auto.error.noJob"));
+      }
+
+      // 关闭 AI 时不会产生 LLM 重试，失败条目即「待翻译」条目，直接返回。
+      if (!useLlm) {
+        return job;
       }
 
       const total = Math.max(0, retryRounds);

@@ -78,15 +78,24 @@ pub fn export_untranslated(job_id: String, file_path: String) -> Result<usize, S
         job_id, file_path
     );
     let root = paths::runtime_root().map_err(|e| e.to_string())?;
-    let manager = jobs::JobManager::new(root.clone());
+    export_untranslated_to_path(&root, &job_id, std::path::Path::new(&file_path))
+}
+
+/// Write the untranslated export JSON used by the UI and by the AI-off auto flow.
+pub(crate) fn export_untranslated_to_path(
+    root: &std::path::Path,
+    job_id: &str,
+    file_path: &std::path::Path,
+) -> Result<usize, String> {
+    let manager = jobs::JobManager::new(root.to_path_buf());
     let job = manager
-        .load(&job_id)?
+        .load(job_id)?
         .ok_or_else(|| format!("任务 {job_id} 未找到"))?;
 
-    let entries = read_untranslated(&root, &job_id)?;
+    let entries = read_untranslated(root, job_id)?;
     let export = UntranslatedExport {
         schema_version: 1,
-        job_id: job_id.clone(),
+        job_id: job_id.to_string(),
         target_language: job.target_language.clone(),
         entries: entries
             .iter()
@@ -103,8 +112,8 @@ pub fn export_untranslated(job_id: String, file_path: String) -> Result<usize, S
 
     let content =
         serde_json::to_string_pretty(&export).map_err(|e| format!("序列化导出内容失败: {e}"))?;
-    std::fs::write(&file_path, content)
-        .map_err(|e| format!("写入导出文件失败 ({}): {e}", file_path))?;
+    std::fs::write(file_path, content)
+        .map_err(|e| format!("写入导出文件失败 ({}): {e}", file_path.display()))?;
     Ok(export.entries.len())
 }
 

@@ -37,7 +37,7 @@ interface Props {
 }
 
 export interface PackagesPageHandle {
-  runAutoPack: () => Promise<PackResult>;
+  runAutoPack: (options?: { allowPartial?: boolean; includeUntranslated?: boolean }) => Promise<PackResult>;
 }
 
 function normalizeWindowsDisplayPath(path: string): string {
@@ -158,7 +158,7 @@ export const PackagesPage = React.memo(forwardRef<PackagesPageHandle, Props>(fun
   const generateFromJob = useCallback(
     async (
       dryRun: boolean,
-      options: { jobOverride?: TranslationJobListItem; throwOnError?: boolean } = {},
+      options: { jobOverride?: TranslationJobListItem; throwOnError?: boolean; allowPartial?: boolean; includeUntranslated?: boolean } = {},
     ): Promise<PackResult | null> => {
       const activeJob = options.jobOverride ?? translationJob;
       if (!activeJob) return null;
@@ -175,6 +175,8 @@ export const PackagesPage = React.memo(forwardRef<PackagesPageHandle, Props>(fun
           targetLang,
           dryRun,
           outputDir ?? undefined,
+          options.allowPartial ?? false,
+          options.includeUntranslated ?? false,
         );
         // 保留短暂进度反馈，避免很快完成时状态条闪一下就消失。
         const minProgressMs = 3000;
@@ -217,17 +219,22 @@ export const PackagesPage = React.memo(forwardRef<PackagesPageHandle, Props>(fun
   }, [translationJob, generateFromJob]);
 
   useImperativeHandle(ref, () => ({
-    runAutoPack: async () => {
+    runAutoPack: async (options) => {
       const job = await loadLatestTranslationJobMeta();
       if (!job) {
         throw new Error(t(language, "auto.error.noJob"));
       }
-      if (job.failedEntries > 0) {
+      if (job.failedEntries > 0 && !options?.allowPartial) {
         throw new Error(t(language, "auto.error.failedEntries", { count: job.failedEntries }));
       }
       setTranslationJob(job);
       setReviewRequired(false);
-      const result = await generateFromJob(false, { jobOverride: job, throwOnError: true });
+      const result = await generateFromJob(false, {
+        jobOverride: job,
+        throwOnError: true,
+        allowPartial: options?.allowPartial,
+        includeUntranslated: options?.includeUntranslated,
+      });
       if (!result) {
         throw new Error(t(language, "packages.noTranslation"));
       }

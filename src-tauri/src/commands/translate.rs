@@ -120,7 +120,9 @@ pub async fn start_translation(
     source_language: String,
     target_language: String,
     scan_job_id: Option<String>,
+    use_llm: Option<bool>,
 ) -> Result<usize, String> {
+    let use_llm = use_llm.unwrap_or(true);
     let root = paths::runtime_root().map_err(|err| err.to_string())?;
     let job_id = logging::new_job_id("translate");
 
@@ -189,24 +191,28 @@ pub async fn start_translation(
             Err(e) => return Err(e.to_string()),
         };
 
-        let llm = settings_load_result.ok().map(|s| LlmConfig {
-            base_url: s.base_url,
-            api_key: s.api_key,
-            model: s.model,
-            temperature: s.temperature,
-            max_tokens: s.max_tokens,
-            concurrency: s.concurrency as usize,
-            batch_size: s.batch_size as usize,
-            timeout_secs: s.timeout_secs as u64,
-            retry_count: s.retry_count as u32,
-            rate_limit_rpm: s.rate_limit_rpm,
-            prefer_user_dict: s.prefer_user_dictionary,
-            system_prompt: if s.system_prompt.is_empty() {
-                crate::core::models::DEFAULT_SYSTEM_PROMPT.to_string()
-            } else {
-                s.system_prompt
-            },
-        });
+        let llm = if use_llm {
+            settings_load_result.ok().map(|s| LlmConfig {
+                base_url: s.base_url,
+                api_key: s.api_key,
+                model: s.model,
+                temperature: s.temperature,
+                max_tokens: s.max_tokens,
+                concurrency: s.concurrency as usize,
+                batch_size: s.batch_size as usize,
+                timeout_secs: s.timeout_secs as u64,
+                retry_count: s.retry_count as u32,
+                rate_limit_rpm: s.rate_limit_rpm,
+                prefer_user_dict: s.prefer_user_dictionary,
+                system_prompt: if s.system_prompt.is_empty() {
+                    crate::core::models::DEFAULT_SYSTEM_PROMPT.to_string()
+                } else {
+                    s.system_prompt
+                },
+            })
+        } else {
+            None
+        };
 
         let config = PipelineConfig {
             root: root.clone(),
@@ -217,7 +223,7 @@ pub async fn start_translation(
             resource_pack_names,
             i18n_reference_db_path: i18n_reference_db_path_for(&app, &effective_target_language)?,
             llm,
-            localize_only: false,
+            localize_only: !use_llm,
         };
 
         pipeline::run_pipeline(

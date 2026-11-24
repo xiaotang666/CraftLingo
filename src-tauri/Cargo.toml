@@ -1,6 +1,6 @@
 [package]
 name = "craftlingo"
-version = "0.0.2"
+version = "0.0.3"
 description = "CraftLingo — 方块译匠：Minecraft 整合包汉化工具"
 authors = ["xiaotang01"]
 license = "AGPL-3.0-or-later"

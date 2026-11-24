@@ -22,7 +22,7 @@ pub fn validate_translation(job_id: String) -> Result<ValidationReport, String> 
 /// Mark a translation job as reviewed (校对完成).
 /// Sets status to Reviewed and records the timestamp.
 #[tauri::command]
-pub fn mark_job_reviewed(job_id: String) -> Result<(), String> {
+pub fn mark_job_reviewed(job_id: String, allow_partial: Option<bool>) -> Result<(), String> {
     info!("mark_job_reviewed: job_id={}", job_id);
     let root = paths::runtime_root().map_err(|e| e.to_string())?;
     let manager = jobs::JobManager::new(root.clone());
@@ -36,7 +36,7 @@ pub fn mark_job_reviewed(job_id: String) -> Result<(), String> {
             job.status
         ));
     }
-    if job.failed_entries > 0 {
+    if job.failed_entries > 0 && !allow_partial.unwrap_or(false) {
         return Err(format!(
             "翻译任务 {job_id} 仍有 {} 条失败或缺失条目，无法标记为已校对",
             job.failed_entries

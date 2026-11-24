@@ -1,3 +1,4 @@
+pub mod ai_requirements;
 pub mod dictionary;
 pub mod glossary;
 pub mod i18n_sync;

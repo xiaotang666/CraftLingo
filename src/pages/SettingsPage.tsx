@@ -848,6 +848,10 @@ export function SettingsPage({ settings, onSettingsChange }: Props) {
                           <ExternalLink size={14} />
                           {t(language, "settings.bilibiliHome")}
                         </button>
+                        <button className="text-button" type="button" onClick={() => openPath("https://ifdian.net/a/mcupdater").catch((err) => setUpdateError(toErrorMessage(err)))}>
+                          <ExternalLink size={14} />
+                          {t(language, "settings.sponsor")}
+                        </button>
                       </div>
                     </div>
                   </div>

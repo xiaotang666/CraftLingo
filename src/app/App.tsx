@@ -112,6 +112,13 @@ function AppShell() {
       return false;
     }
   });
+  const [autoAi, setAutoAi] = useState(() => {
+    try {
+      return localStorage.getItem("craftlingo_auto_ai") !== "0";
+    } catch {
+      return true;
+    }
+  });
   const [autoFlow, setAutoFlow] = useState<AutoFlowState>({
     active: false,
     phase: "idle",
@@ -356,6 +363,15 @@ function AppShell() {
     }
   }, []);
 
+  const updateAutoAi = useCallback((enabled: boolean) => {
+    setAutoAi(enabled);
+    try {
+      localStorage.setItem("craftlingo_auto_ai", enabled ? "1" : "0");
+    } catch {
+      // localStorage 只影响开关记忆，不影响当前会话。
+    }
+  }, []);
+
   const clearAutoTimer = useCallback(() => {
     if (autoClearTimerRef.current !== null) {
       window.clearTimeout(autoClearTimerRef.current);
@@ -446,7 +462,7 @@ function AppShell() {
 
   const runAutoFlowAfterScan = useCallback(async (summary: ScanSummary, currentSettings: Settings) => {
     if (!autoMode || summary.cancelled) return;
-    if (!currentSettings.apiKey.trim()) {
+    if (autoAi && !currentSettings.apiKey.trim()) {
       finishAutoFlow("failed", t(language, "app.apiKeyMissing"));
       return;
     }
@@ -461,6 +477,7 @@ function AppShell() {
         (attempt, total) => {
           showAutoStage("retrying", t(language, "auto.status.retrying", { attempt, total }));
         },
+        { useLlm: autoAi },
       );
       if (!job) throw new Error(t(language, "auto.error.noJob"));
 
@@ -468,13 +485,13 @@ function AppShell() {
       setActivePage("validate");
       showAutoStage("reviewing", t(language, "auto.status.reviewing"));
       await delay(450);
-      await validateRef.current?.runAutoReview();
+      await validateRef.current?.runAutoReview({ allowPartial: !autoAi });
 
       ensureAutoNotCancelled();
       setActivePage("packages");
       showAutoStage("packing", t(language, "auto.status.packing"));
       await delay(450);
-      await packagesRef.current?.runAutoPack();
+      await packagesRef.current?.runAutoPack({ allowPartial: !autoAi, includeUntranslated: !autoAi });
 
       ensureAutoNotCancelled();
       autoCancelRequestedRef.current = false;
@@ -488,7 +505,7 @@ function AppShell() {
         wasCancelled ? t(language, "auto.status.cancelled") : `${t(language, "auto.status.failed")}：${message}`,
       );
     }
-  }, [autoMode, ensureAutoNotCancelled, finishAutoFlow, language, showAutoStage]);
+  }, [autoAi, autoMode, ensureAutoNotCancelled, finishAutoFlow, language, showAutoStage]);
 
   const requestStopAutoFlow = useCallback(async () => {
     if (!autoFlow.active || autoFlow.stopping) return;
@@ -524,6 +541,8 @@ function AppShell() {
             autoMode={autoMode}
             autoLocked={isAutoLocked}
             onAutoModeChange={updateAutoMode}
+            autoAi={autoAi}
+            onAutoAiChange={updateAutoAi}
             onAutoScanStart={handleAutoScanStart}
             onAutoScanComplete={runAutoFlowAfterScan}
             onAutoScanCancelled={handleAutoScanCancelled}

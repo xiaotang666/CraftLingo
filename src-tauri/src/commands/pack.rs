@@ -1,4 +1,5 @@
-use crate::core::{packer, paths, settings};
+use crate::commands::localize;
+use crate::core::{ai_requirements, packer, paths, settings};
 use tracing::info;
 
 #[tauri::command]
@@ -22,11 +23,13 @@ pub async fn generate_pack_from_job(
     dry_run: bool,
     output_dir: Option<String>,
     allow_partial: Option<bool>,
+    include_untranslated: Option<bool>,
 ) -> Result<packer::PackResult, String> {
     let allow_partial = allow_partial.unwrap_or(false);
+    let include_untranslated = include_untranslated.unwrap_or(false);
     info!(
-        "generate_pack_from_job: job_id={}, target_language={}, dry_run={}, output_dir={:?}, allow_partial={}",
-        job_id, target_language, dry_run, output_dir, allow_partial
+        "generate_pack_from_job: job_id={}, target_language={}, dry_run={}, output_dir={:?}, allow_partial={}, include_untranslated={}",
+        job_id, target_language, dry_run, output_dir, allow_partial, include_untranslated
     );
 
     let result = tauri::async_runtime::spawn_blocking(move || {
@@ -47,20 +50,17 @@ pub async fn generate_pack_from_job(
         let results = manager.load_results(&job_id)?;
 
         let entries: Vec<packer::PackEntry> = results
-            .into_iter()
+            .iter()
             .filter(|r| !r.target_text.is_empty() && r.source_type != "untranslated")
             .map(|r| packer::PackEntry {
-                mod_id: r.mod_id,
-                key: r.key,
-                text: r.target_text,
-                source_text: r.source_text,
-                source_file: r.source_file,
+                mod_id: r.mod_id.clone(),
+                key: r.key.clone(),
+                text: r.target_text.clone(),
+                source_text: r.source_text.clone(),
+                source_file: r.source_file.clone(),
+                source_type: r.source_type.clone(),
             })
             .collect();
-
-        if entries.is_empty() {
-            return Err("翻译结果为空或所有条目均未通过校验，无法生成资源包".to_string());
-        }
 
         let output_dir = output_dir
             .map(|p| std::path::PathBuf::from(p))
@@ -81,6 +81,41 @@ pub async fn generate_pack_from_job(
                 Err(e) => return Err(format!("MC 版本检测失败，无法确定资源包 pack_format: {e}")),
             }
         };
+
+        // 关闭 AI 的全自动流程：先输出待翻译文件与要求说明，保证即使没有
+        // 任何词典命中，用户也能拿到可交付的文件。
+        if include_untranslated && !dry_run {
+            let safe_build_name = packer::sanitize_name(&build_name);
+            let untranslated_path = output_dir.join(format!(
+                "{}-{}-待翻译.json",
+                safe_build_name, target_language
+            ));
+            let count =
+                localize::export_untranslated_to_path(&root, &job_id, &untranslated_path)?;
+            info!(
+                "generate_pack_from_job: 已输出 {} 条待翻译条目 → {}",
+                count,
+                untranslated_path.display()
+            );
+
+            let requirements_path = output_dir.join("ai翻译要求.txt");
+            std::fs::write(
+                &requirements_path,
+                ai_requirements::render(&target_language),
+            )
+            .map_err(|e| format!("写入 ai翻译要求.txt 失败: {e}"))?;
+
+            if entries.is_empty() {
+                return Err(format!(
+                    "没有可打包的词典译文，已输出待翻译文件（{} 条）与 ai翻译要求.txt",
+                    count
+                ));
+            }
+        }
+
+        if entries.is_empty() {
+            return Err("翻译结果为空或所有条目均未通过校验，无法生成资源包".to_string());
+        }
 
         let options = packer::PackOptions {
             target_language,

@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 /// Replace dangerous path characters with underscores.
-fn sanitize_name(name: &str) -> String {
+pub(crate) fn sanitize_name(name: &str) -> String {
     name.replace(
         |c: char| {
             c.is_ascii_control()
@@ -29,6 +29,10 @@ pub struct PackEntry {
     /// back to `assets/<mod_id>/lang/<target>.json`.
     #[serde(default)]
     pub source_file: String,
+    /// Translation origin (`llm`, `dictionary`, `existing`, `imported`, ...).
+    /// Used to annotate AI-generated entries in the generated language files.
+    #[serde(default)]
+    pub source_type: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -282,6 +286,8 @@ pub fn generate_pack(options: &PackOptions) -> io::Result<PackResult> {
 
     // Generate language files at their original positions (json or lang)
     let mut conflicts = Vec::new();
+    // (relative lang path, mod id, key, translated text, source text)
+    let mut ai_entries: Vec<(String, String, String, String, String)> = Vec::new();
     for (rel_path, entries) in &by_path {
         let lang_path = pack_dir.join(rel_path);
         if let Some(parent) = lang_path.parent() {
@@ -308,6 +314,20 @@ pub fn generate_pack(options: &PackOptions) -> io::Result<PackResult> {
         }
         for e in entries {
             lang_map.insert(e.key.clone(), e.text.clone());
+            // 为 AI 生成的条目追加注释键，便于后续人工复核；游戏不会引用该键。
+            if e.source_type == "llm" {
+                lang_map.insert(
+                    format!("{}.__ai_note", e.key),
+                    format!("AI 生成 | 原文: {} | 建议人工复核", e.source_text),
+                );
+                ai_entries.push((
+                    rel_path.clone(),
+                    e.mod_id.clone(),
+                    e.key.clone(),
+                    e.text.clone(),
+                    e.source_text.clone(),
+                ));
+            }
         }
         write_lang_map(&lang_path, &lang_map, is_lang)?;
     }
@@ -322,6 +342,30 @@ pub fn generate_pack(options: &PackOptions) -> io::Result<PackResult> {
     // Clean up the source directory; only the zip is needed as final output.
     if let Err(e) = std::fs::remove_dir_all(&pack_dir) {
         tracing::warn!(path = %pack_dir.display(), error = %e, "Failed to clean up pack source directory");
+    }
+
+    // Write a human-readable report of AI-generated entries next to the zip.
+    if !ai_entries.is_empty() {
+        let mut report = String::new();
+        report.push_str("CraftLingo AI 生成条目清单\n");
+        report.push_str(&format!("目标语言: {}\n", options.target_language));
+        report.push_str(&format!("生成时间: {}\n", generated_at));
+        report.push_str(&format!("AI 条目数: {}\n", ai_entries.len()));
+        let mut current_path = "";
+        for (rel_path, mod_id, key, text, source_text) in &ai_entries {
+            if current_path != rel_path.as_str() {
+                report.push_str(&format!("\n[{}] {}\n", rel_path, mod_id));
+                current_path = rel_path.as_str();
+            }
+            report.push_str(&format!(
+                "- {}\n  原文: {}\n  译文: {}\n",
+                key, source_text, text
+            ));
+        }
+        let report_path = output_dir.join("AI生成条目.txt");
+        if let Err(e) = std::fs::write(&report_path, report) {
+            tracing::warn!(path = %report_path.display(), error = %e, "Failed to write AI entry report");
+        }
     }
 
     let zip_size = std::fs::metadata(&zip_path).map(|m| m.len()).unwrap_or(0);
@@ -484,6 +528,7 @@ mod tests {
             text: "你好".into(),
             source_text: "Hello".into(),
             source_file: String::new(),
+            source_type: String::new(),
         }];
         let options = PackOptions {
             target_language: "zh_cn".into(),
@@ -509,6 +554,7 @@ mod tests {
             text: "你好".into(),
             source_text: "Hello".into(),
             source_file: String::new(),
+            source_type: String::new(),
         }];
         let options = PackOptions {
             target_language: "zh_cn".into(),
@@ -553,6 +599,7 @@ mod tests {
             text: "你好".into(),
             source_text: "Hello".into(),
             source_file: String::new(),
+            source_type: String::new(),
         }];
         let options = PackOptions {
             target_language: "zh_cn".into(),
@@ -622,6 +669,7 @@ mod tests {
                 text: "甲".into(),
                 source_text: "A".into(),
                 source_file: "assets/alpha/lang/en_us.json".into(),
+                source_type: String::new(),
             },
             PackEntry {
                 mod_id: "beta".into(),
@@ -629,6 +677,7 @@ mod tests {
                 text: "乙".into(),
                 source_text: "B".into(),
                 source_file: "assets/beta/lang/en_us.lang".into(),
+                source_type: String::new(),
             },
         ];
         let options = PackOptions {
@@ -659,6 +708,62 @@ mod tests {
     }
 
     #[test]
+    fn pack_annotates_llm_entries_and_writes_report() {
+        let tmp = std::env::temp_dir().join("packer-test-ai-note");
+        let _ = std::fs::remove_dir_all(&tmp);
+        let entries = vec![
+            PackEntry {
+                mod_id: "alpha".into(),
+                key: "item.alpha.ai".into(),
+                text: "AI译文".into(),
+                source_text: "AI Source".into(),
+                source_file: "assets/alpha/lang/en_us.json".into(),
+                source_type: "llm".into(),
+            },
+            PackEntry {
+                mod_id: "alpha".into(),
+                key: "item.alpha.dict".into(),
+                text: "词典译文".into(),
+                source_text: "Dict Source".into(),
+                source_file: "assets/alpha/lang/en_us.json".into(),
+                source_type: "dictionary".into(),
+            },
+        ];
+        let options = PackOptions {
+            target_language: "zh_cn".into(),
+            entries,
+            build_name: "AiNoteTest".into(),
+            dry_run: false,
+            output_dir: tmp.to_string_lossy().to_string(),
+            pack_format: 15,
+            icon_path: None,
+        };
+        let result = generate_pack(&options).unwrap();
+
+        let zip_file = std::fs::File::open(&result.zip_path).unwrap();
+        let mut archive = zip::ZipArchive::new(zip_file).unwrap();
+        let mut lang = String::new();
+        archive
+            .by_name("assets/alpha/lang/zh_cn.json")
+            .unwrap()
+            .read_to_string(&mut lang)
+            .unwrap();
+        let value: serde_json::Value = serde_json::from_str(&lang).unwrap();
+        assert_eq!(value["item.alpha.ai"], "AI译文");
+        assert!(value["item.alpha.ai.__ai_note"]
+            .as_str()
+            .unwrap()
+            .contains("AI 生成"));
+        assert!(value.get("item.alpha.dict.__ai_note").is_none());
+
+        let report = std::fs::read_to_string(tmp.join("AI生成条目.txt")).unwrap();
+        assert!(report.contains("item.alpha.ai"));
+        assert!(!report.contains("item.alpha.dict"));
+
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
     fn pack_reports_conflicts_for_same_path_and_key() {
         let tmp = std::env::temp_dir().join("packer-test-conflicts");
         let _ = std::fs::remove_dir_all(&tmp);
@@ -669,6 +774,7 @@ mod tests {
                 text: "甲".into(),
                 source_text: "A".into(),
                 source_file: "assets/alpha/lang/en_us.json".into(),
+                source_type: String::new(),
             },
             PackEntry {
                 mod_id: "alpha-addon".into(),
@@ -676,6 +782,7 @@ mod tests {
                 text: "甲改".into(),
                 source_text: "A".into(),
                 source_file: "assets/alpha/lang/en_us.json".into(),
+                source_type: String::new(),
             },
         ];
         let options = PackOptions {

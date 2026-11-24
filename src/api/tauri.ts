@@ -334,6 +334,7 @@ export async function startTranslation(
   sourceLanguage: string,
   targetLanguage: string,
   scanJobId?: string,
+  useLlm = true,
 ): Promise<number> {
   if (!isTauriRuntime()) {
     throw new Error("Not available in browser preview mode, please run in Tauri desktop");
@@ -343,6 +344,7 @@ export async function startTranslation(
     sourceLanguage,
     targetLanguage,
     scanJobId: scanJobId ?? null,
+    useLlm,
   });
 }
 
@@ -487,9 +489,9 @@ export async function validateTranslation(jobId: string): Promise<ValidationRepo
 }
 
 /** Mark a translation job as reviewed (校对完成). */
-export async function markJobReviewed(jobId: string): Promise<void> {
+export async function markJobReviewed(jobId: string, allowPartial = false): Promise<void> {
   if (!isTauriRuntime()) return;
-  return tauriInvoke<void>("mark_job_reviewed", { jobId });
+  return tauriInvoke<void>("mark_job_reviewed", { jobId, allowPartial });
 }
 
 export async function copyPackToInstance(
@@ -511,12 +513,13 @@ export async function generatePackFromJob(
   dryRun: boolean,
   outputDir?: string,
   allowPartial = false,
+  includeUntranslated = false,
 ): Promise<PackResult> {
   if (!isTauriRuntime()) {
     return { outputDir: "", zipPath: "", modCount: 0, entryCount: 0, conflicts: [] };
   }
   return tauriInvoke<PackResult>("generate_pack_from_job", {
-    jobId, targetLanguage, dryRun, outputDir: outputDir ?? null, allowPartial,
+    jobId, targetLanguage, dryRun, outputDir: outputDir ?? null, allowPartial, includeUntranslated,
   });
 }
 

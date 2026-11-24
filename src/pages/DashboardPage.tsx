@@ -33,6 +33,8 @@ interface Props {
   autoMode?: boolean;
   autoLocked?: boolean;
   onAutoModeChange?: (enabled: boolean) => void;
+  autoAi?: boolean;
+  onAutoAiChange?: (enabled: boolean) => void;
   onAutoScanStart?: () => void;
   onAutoScanComplete?: (summary: ScanSummary, settings: Settings) => void;
   onAutoScanCancelled?: () => void;
@@ -122,6 +124,8 @@ export const DashboardPage = React.memo(forwardRef<DashboardPageHandle, Props>(f
   autoMode = false,
   autoLocked = false,
   onAutoModeChange,
+  autoAi = true,
+  onAutoAiChange,
   onAutoScanStart,
   onAutoScanComplete,
   onAutoScanCancelled,
@@ -660,6 +664,22 @@ export const DashboardPage = React.memo(forwardRef<DashboardPageHandle, Props>(f
         subtitle={t(language, "dashboard.subtitle")}
         actions={
           <div className="dashboard-actions">
+            <label className="auto-mode-toggle auto-ai-toggle" data-tooltip={t(language, "auto.ai.tooltip")}>
+              <input
+                className="auto-mode-input"
+                type="checkbox"
+                role="switch"
+                checked={autoAi}
+                disabled={isScanning || autoLocked}
+                onChange={(event) => onAutoAiChange?.(event.target.checked)}
+              />
+              <span className="auto-mode-switch" aria-hidden="true">
+                <span className="auto-mode-switch-thumb">
+                  <Sparkles size={11} strokeWidth={2.6} />
+                </span>
+              </span>
+              <span className="auto-mode-label">{autoAi ? t(language, "auto.ai.enabled") : t(language, "auto.ai.disabled")}</span>
+            </label>
             <label className="auto-mode-toggle" data-tooltip={t(language, "auto.tooltip")}>
               <input
                 className="auto-mode-input"

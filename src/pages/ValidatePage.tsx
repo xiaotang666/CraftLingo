@@ -25,7 +25,7 @@ interface Props {
 }
 
 export interface ValidatePageHandle {
-  runAutoReview: () => Promise<void>;
+  runAutoReview: (options?: { allowPartial?: boolean }) => Promise<void>;
 }
 
 // ── Component ────────────────────────────────────────────────────
@@ -260,7 +260,7 @@ export const ValidatePage = React.memo(forwardRef<ValidatePageHandle, Props>(fun
   // ── Render helpers ──
 
   // ── 校对完成处理 ──
-  async function reviewCurrentJob(options: { navigateOnComplete: boolean; throwOnError?: boolean }) {
+  async function reviewCurrentJob(options: { navigateOnComplete: boolean; throwOnError?: boolean; allowPartial?: boolean }) {
     if (submitting) return;
     let activeJob = job;
     if (!activeJob) {
@@ -273,7 +273,7 @@ export const ValidatePage = React.memo(forwardRef<ValidatePageHandle, Props>(fun
       setError(err.message);
       return;
     }
-    if (activeJob.failedEntries > 0) {
+    if (activeJob.failedEntries > 0 && !options.allowPartial) {
       const err = new Error(t(language, "validate.failedEntriesWarning", { count: activeJob.failedEntries }));
       if (options.throwOnError) throw err;
       setError(err.message);
@@ -283,7 +283,7 @@ export const ValidatePage = React.memo(forwardRef<ValidatePageHandle, Props>(fun
     setError("");
     try {
       if (!(activeJob.reviewed === true || activeJob.status === "reviewed")) {
-        await markJobReviewed(activeJob.jobId);
+        await markJobReviewed(activeJob.jobId, options.allowPartial ?? false);
       }
       setJob((prev) => prev ? { ...prev, reviewed: true, status: "reviewed" } : prev);
       if (options.navigateOnComplete) {
@@ -305,7 +305,7 @@ export const ValidatePage = React.memo(forwardRef<ValidatePageHandle, Props>(fun
   }
 
   useImperativeHandle(ref, () => ({
-    runAutoReview: () => reviewCurrentJob({ navigateOnComplete: false, throwOnError: true }),
+    runAutoReview: (options) => reviewCurrentJob({ navigateOnComplete: false, throwOnError: true, allowPartial: options?.allowPartial }),
   }), [reviewCurrentJob]);
 
   const hasBlockingFailures = (job?.failedEntries ?? 0) > 0;
