@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "CraftLingo",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "identifier": "com.xiaotang01.craftlingo",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -40,8 +40,14 @@
   },
   "plugins": {
     "updater": {
-      "endpoints": ["https://github.com/xiaotang666/CraftLingo/releases/latest/download/update.json"],
-      "pubkey": "ZFc1MGNuVnpkR1ZrSUdOdmJXMWxiblE2SUcxcGJtbHphV2R1SUhCMVlteHBZeUJyWlhrNklEbEdRalV5TVVaQlJFVXdNa1kzTVVFS1VsZFJZVGwzVEdVcmFVY3hibmRGWVZOR0wwcFFiV05QYlVaRFpFMUhhVzFOTnpWWVdrUmlXak0xUkVjcmJDOUZVMFJ5Tmxvek5WY0s="
+      "endpoints": [
+        "https://ghfast.top/https://github.com/xiaotang666/CraftLingo/releases/latest/download/update.json",
+        "https://gh-proxy.com/https://github.com/xiaotang666/CraftLingo/releases/latest/download/update.json",
+        "https://ghproxy.net/https://github.com/xiaotang666/CraftLingo/releases/latest/download/update.json",
+        "https://gh-proxy.net/https://github.com/xiaotang666/CraftLingo/releases/latest/download/update.json",
+        "https://github.com/xiaotang666/CraftLingo/releases/latest/download/update.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDU1MDA0ODIxNjdDNzEyMjcKUldRbkVzZG5JVWdBVlFrT3AraHJKa0VKYlRVNm81YkhORWl1RzFadk9vdStlaUNPL1ExZ0kxR3oK"
     }
   }
 }

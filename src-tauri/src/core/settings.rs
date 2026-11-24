@@ -27,24 +27,7 @@ pub fn load_settings(root: &Path) -> io::Result<Settings> {
     }
 
     let content = fs::read_to_string(path)?;
-    let mut settings: Settings = serde_json::from_str(&content)
-        .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
-    migrate_legacy_fields(&mut settings);
-    Ok(settings)
-}
-
-/// 旧版本写入的默认地址（仓库路径已变更），读到后清空以回退到新的内置默认值。
-const LEGACY_MANIFEST_URLS: &[&str] = &[
-    "https://raw.githubusercontent.com/xiaotang666/CraftLingo/main/manifest.json",
-    "https://raw.githubusercontent.com/xiaotang666/CraftLingo-Dictionary/main/manifest.json",
-];
-
-fn migrate_legacy_fields(settings: &mut Settings) {
-    let current = settings.i18n_dict_manifest_url.trim().trim_end_matches('/');
-    if LEGACY_MANIFEST_URLS.contains(&current) {
-        tracing::info!(url = %current, "Clearing legacy dictionary manifest URL");
-        settings.i18n_dict_manifest_url.clear();
-    }
+    serde_json::from_str(&content).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))
 }
 
 /// Validate settings fields, returning an error for out-of-range values.
@@ -230,23 +213,5 @@ mod tests {
         let result = apply_placeholders(&s, "1.20.4");
         assert_eq!(result.resource_pack_names[0], "pack-fixed.zip");
         assert_eq!(result.output_pack_name, "custom-fixed.zip");
-    }
-
-    #[test]
-    fn test_migrate_legacy_manifest_url_clears_old_default() {
-        let mut s = Settings::default();
-        s.i18n_dict_manifest_url =
-            "https://raw.githubusercontent.com/xiaotang666/CraftLingo/main/manifest.json"
-                .to_string();
-        migrate_legacy_fields(&mut s);
-        assert!(s.i18n_dict_manifest_url.is_empty());
-    }
-
-    #[test]
-    fn test_migrate_legacy_manifest_url_keeps_custom() {
-        let mut s = Settings::default();
-        s.i18n_dict_manifest_url = "https://example.com/manifest.json".to_string();
-        migrate_legacy_fields(&mut s);
-        assert_eq!(s.i18n_dict_manifest_url, "https://example.com/manifest.json");
     }
 }

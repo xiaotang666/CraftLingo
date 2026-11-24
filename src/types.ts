@@ -197,6 +197,18 @@ export interface DictionaryStats {
   modIds: string[];
 }
 
+export interface ReferenceDictEntry {
+  sourceText: string;
+  targetText: string;
+  modId: string;
+  key: string;
+}
+
+export interface ReferenceDictPage {
+  total: number;
+  entries: ReferenceDictEntry[];
+}
+
 export interface ImportResult {
   imported: number;
   skipped: number;

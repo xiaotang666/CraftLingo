@@ -14,19 +14,21 @@ import {
   deleteDictionaryEntry,
   deleteDictionarySelection,
   getDictionaryStats,
+  queryReferenceDict,
   searchDictionary,
   translateSingleEntry,
   updateDictionaryEntry,
 } from "../api/tauri";
 import { t } from "../i18n/translations";
 import { getSettings } from "../api/tauri";
-import type { AppLanguage, DictionaryEntry, DictionaryQueryParams, DictionarySelectionDeleteRequest, DictionaryStats, Settings } from "../types";
+import type { AppLanguage, DictionaryEntry, DictionaryQueryParams, DictionarySelectionDeleteRequest, DictionaryStats, ReferenceDictEntry, Settings } from "../types";
 
 interface Props {
   language: AppLanguage;
 }
 
 const DICTIONARY_PAGE_SIZE = 1000;
+const REFERENCE_PAGE_SIZE = 200;
 
 type DictionarySelection =
   | { mode: "ids"; ids: Set<number> }
@@ -124,6 +126,12 @@ export function DictionaryPage({ language }: Props) {
   const [selection, setSelection] = useState<DictionarySelection>(() => emptySelection());
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [mode, setMode] = useState<"local" | "reference">("local");
+  const [refQuery, setRefQuery] = useState("");
+  const [refEntries, setRefEntries] = useState<ReferenceDictEntry[]>([]);
+  const [refTotal, setRefTotal] = useState(0);
+  const [refLoading, setRefLoading] = useState(false);
+  const [refError, setRefError] = useState("");
   const debouncedSearch = useDebouncedValue(globalSearch, 300);
   const selectAllLoadedRef = useRef<HTMLInputElement>(null);
 
@@ -667,10 +675,122 @@ export function DictionaryPage({ language }: Props) {
     [panelOpen, panelKey, handleDelete, isSelected, toggleEntrySelected, language],
   );
 
+  // ── 增强词典（只读浏览） ──
+  const debouncedRefQuery = useDebouncedValue(refQuery, 250);
+
+  useEffect(() => {
+    if (mode !== "reference") return;
+    let cancelled = false;
+    setRefLoading(true);
+    setRefError("");
+    queryReferenceDict(debouncedRefQuery, 0, REFERENCE_PAGE_SIZE)
+      .then((page) => {
+        if (cancelled) return;
+        setRefEntries(page.entries);
+        setRefTotal(page.total);
+      })
+      .catch((err) => {
+        if (!cancelled) setRefError(err instanceof Error ? err.message : String(err));
+      })
+      .finally(() => {
+        if (!cancelled) setRefLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, debouncedRefQuery]);
+
+  async function loadMoreReference() {
+    setRefLoading(true);
+    setRefError("");
+    try {
+      const page = await queryReferenceDict(debouncedRefQuery, refEntries.length, REFERENCE_PAGE_SIZE);
+      setRefEntries((prev) => [...prev, ...page.entries]);
+      setRefTotal(page.total);
+    } catch (err) {
+      setRefError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setRefLoading(false);
+    }
+  }
+
+  const modeTabs = (
+    <div className="dictionary-mode-tabs">
+      <button
+        type="button"
+        className={mode === "local" ? "primary-button" : "ghost-button"}
+        onClick={() => setMode("local")}
+      >
+        {t(language, "dictionary.tabLocal")}
+      </button>
+      <button
+        type="button"
+        className={mode === "reference" ? "primary-button" : "ghost-button"}
+        onClick={() => setMode("reference")}
+      >
+        {t(language, "dictionary.tabReference")}
+      </button>
+    </div>
+  );
+
   // ── Render ──
+
+  if (mode === "reference") {
+    return (
+      <section className="page dictionary-page">
+        {modeTabs}
+        <PageHeader
+          title={t(language, "dictionary.tabReference")}
+          subtitle={t(language, "dictionary.referenceSubtitle", { total: refTotal })}
+        />
+        <div className="dictionary-toolbar">
+          <SearchInput
+            value={refQuery}
+            onChange={setRefQuery}
+            placeholder={t(language, "dictionary.searchPlaceholder")}
+          />
+        </div>
+        {refError && <div className="alert error">{refError}</div>}
+        <div className="table-wrapper">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>{t(language, "dictionary.col.source")}</th>
+                <th>{t(language, "dictionary.col.target")}</th>
+                <th>{t(language, "dictionary.col.mod")}</th>
+                <th>{t(language, "dictionary.col.key")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {refEntries.map((entry, index) => (
+                <tr key={`${index}-${entry.key}-${entry.sourceText}`}>
+                  <td>{entry.sourceText}</td>
+                  <td>{entry.targetText}</td>
+                  <td>{entry.modId || "-"}</td>
+                  <td className="mono">{entry.key || "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {refLoading && <div className="empty-state">{t(language, "common.loading")}</div>}
+        {!refLoading && refEntries.length === 0 && (
+          <div className="empty-state">{t(language, "dictionary.referenceEmpty")}</div>
+        )}
+        {!refLoading && refEntries.length < refTotal && (
+          <div className="load-more-row">
+            <button className="ghost-button" type="button" onClick={loadMoreReference}>
+              {t(language, "common.loadMore")}
+            </button>
+          </div>
+        )}
+      </section>
+    );
+  }
 
   return (
     <section className="page dictionary-page">
+      {modeTabs}
       <PageHeader
         title={t(language, "dictionary.title")}
         subtitle={stats

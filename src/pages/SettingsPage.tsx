@@ -21,6 +21,9 @@ import {
   checkUpdate as updaterCheck,
   checkLlmConnection,
   checkI18nDictUpdate,
+  checkGlossaryUpdate,
+  glossaryStatus,
+  updateGlossary,
   downloadAndInstallUpdate,
   getAppVersion,
   openPath,
@@ -115,6 +118,11 @@ export function SettingsPage({ settings, onSettingsChange }: Props) {
   const [i18nDictInfo, setI18nDictInfo] = useState<I18nDictUpdateInfo | null>(null);
   const [i18nDictError, setI18nDictError] = useState("");
   const [i18nDictProgress, setI18nDictProgress] = useState<{ percent: number | null; downloaded: number; total: number | null } | null>(null);
+  const [glossary, setGlossary] = useState<{ installed: boolean; files: number; terms: number; updatedAt: string } | null>(null);
+  const [glossaryBusy, setGlossaryBusy] = useState(false);
+  const [glossaryPhase, setGlossaryPhase] = useState<"check" | "update">("check");
+  const [glossaryMessage, setGlossaryMessage] = useState("");
+  const [glossaryError, setGlossaryError] = useState("");
 
   useEffect(() => {
     getAppVersion().then(setAppVersion).catch(() => setAppVersion("?"));
@@ -292,6 +300,46 @@ export function SettingsPage({ settings, onSettingsChange }: Props) {
     } catch (err) {
       setI18nDictError(toErrorMessage(err));
       setI18nDictStatus("error");
+    }
+  }
+
+  useEffect(() => {
+    glossaryStatus().then(setGlossary).catch(() => {});
+  }, []);
+
+  async function handleCheckGlossary() {
+    setGlossaryBusy(true);
+    setGlossaryPhase("check");
+    setGlossaryError("");
+    setGlossaryMessage("");
+    try {
+      const result = await checkGlossaryUpdate();
+      setGlossary(await glossaryStatus());
+      setGlossaryMessage(
+        result.upToDate
+          ? t(language, "settings.glossaryUpToDate")
+          : t(language, "settings.glossaryUpdateAvailable", { count: result.changedFiles }),
+      );
+    } catch (err) {
+      setGlossaryError(toErrorMessage(err));
+    } finally {
+      setGlossaryBusy(false);
+    }
+  }
+
+  async function handleUpdateGlossary() {
+    setGlossaryBusy(true);
+    setGlossaryPhase("update");
+    setGlossaryError("");
+    setGlossaryMessage("");
+    try {
+      const status = await updateGlossary();
+      setGlossary(status);
+      setGlossaryMessage(t(language, "settings.glossaryUpdated", { terms: status.terms }));
+    } catch (err) {
+      setGlossaryError(toErrorMessage(err));
+    } finally {
+      setGlossaryBusy(false);
     }
   }
 
@@ -668,6 +716,42 @@ export function SettingsPage({ settings, onSettingsChange }: Props) {
                     {i18nDictStatus === "error" && i18nDictError && (
                       <div className="alert error">{i18nDictError}</div>
                     )}
+                  </div>
+                </div>
+                <div className="settings-card">
+                  <h3 className="settings-card-header">{t(language, "settings.glossaryTitle")}</h3>
+                  <div className="settings-card-body">
+                    <small>{t(language, "settings.glossaryDescription")}</small>
+                    <div className="empty-state compact" style={{ alignItems: "flex-start" }}>
+                      <span>
+                        {glossary && glossary.files > 0
+                          ? t(language, "settings.glossaryMeta", { files: glossary.files, terms: glossary.terms })
+                          : t(language, "settings.glossaryEmpty")}
+                      </span>
+                      {glossary?.updatedAt ? <span>{glossary.updatedAt}</span> : null}
+                    </div>
+                    <div className="inline-control update-actions">
+                      <button
+                        className="ghost-button"
+                        type="button"
+                        disabled={glossaryBusy}
+                        onClick={handleCheckGlossary}
+                      >
+                        <RefreshCcw size={16} />
+                        {glossaryBusy && glossaryPhase === "check" ? t(language, "settings.glossaryChecking") : t(language, "settings.glossaryCheck")}
+                      </button>
+                      <button
+                        className="ghost-button"
+                        type="button"
+                        disabled={glossaryBusy}
+                        onClick={handleUpdateGlossary}
+                      >
+                        <Database size={16} />
+                        {glossaryBusy && glossaryPhase === "update" ? t(language, "settings.glossaryUpdating") : t(language, "settings.glossaryUpdate")}
+                      </button>
+                    </div>
+                    {glossaryMessage && <span>{glossaryMessage}</span>}
+                    {glossaryError && <div className="alert error">{glossaryError}</div>}
                   </div>
                 </div>
                 <div className="settings-card">

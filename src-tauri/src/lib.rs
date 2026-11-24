@@ -122,6 +122,11 @@ pub fn run() {
             commands::get_dictionary_stats,
             commands::check_i18n_dict_update,
             commands::update_i18n_dict,
+            commands::query_reference_dict,
+            commands::glossary_status,
+            commands::list_glossary_terms,
+            commands::check_glossary_update,
+            commands::update_glossary,
             // P4: Pack
             commands::copy_pack_to_instance,
             // Translation

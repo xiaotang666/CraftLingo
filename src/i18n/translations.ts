@@ -27,6 +27,7 @@ export type TranslationKey =
   | "nav.dashboard"
   | "nav.jobs"
   | "nav.dictionary"
+  | "nav.glossary"
   | "nav.packages"
   | "nav.validate"
   | "nav.settings"
@@ -94,6 +95,14 @@ export type TranslationKey =
   | "common.filterMax"
   | "common.remove"
   | "dictionary.title"
+  | "dictionary.tabLocal"
+  | "dictionary.tabReference"
+  | "dictionary.referenceSubtitle"
+  | "dictionary.referenceEmpty"
+  | "glossary.subtitle"
+  | "glossary.searchPlaceholder"
+  | "glossary.empty"
+  | "common.loadMore"
   | "dictionary.subtitle"
   | "dictionary.subtitleEmpty"
   | "dictionary.searchPlaceholder"
@@ -341,6 +350,17 @@ export type TranslationKey =
   | "settings.i18nDictTargetOnly"
   | "settings.i18nDictSource"
   | "settings.i18nDictManifestUrl"
+  | "settings.glossaryTitle"
+  | "settings.glossaryDescription"
+  | "settings.glossaryCheck"
+  | "settings.glossaryUpdate"
+  | "settings.glossaryChecking"
+  | "settings.glossaryUpdating"
+  | "settings.glossaryMeta"
+  | "settings.glossaryEmpty"
+  | "settings.glossaryUpToDate"
+  | "settings.glossaryUpdateAvailable"
+  | "settings.glossaryUpdated"
   | "dashboard.localize.start"
   | "dashboard.localize.tooltip"
   | "dashboard.localize.export"
@@ -523,6 +543,7 @@ const zhCn: TranslationMap = {
   "nav.validate": "校验",
   "nav.packages": "打包",
   "nav.dictionary": "词典",
+  "nav.glossary": "术语库",
   "nav.settings": "设置",
   "nav.logs": "调试",
   "nav.collapse": "收起侧栏",
@@ -599,6 +620,14 @@ const zhCn: TranslationMap = {
   "common.filterMax": "最大值",
   "common.remove": "删除",
   "dictionary.title": "词典管理",
+  "dictionary.tabLocal": "本地词典",
+  "dictionary.tabReference": "增强词典",
+  "dictionary.referenceSubtitle": "共 {total} 条参考词条（只读，来自 CraftLingo-Dictionary）",
+  "dictionary.referenceEmpty": "暂无参考词条，请先在设置页更新增强词典",
+  "glossary.subtitle": "{files} 个文件 · {terms} 条术语",
+  "glossary.searchPlaceholder": "搜索原文或译文...",
+  "glossary.empty": "术语库为空，请先在设置页更新术语库",
+  "common.loadMore": "加载更多",
   "dictionary.subtitle": "共 {total} 条词典条目，{mods} 个模组",
   "dictionary.subtitleEmpty": "词典尚未加载",
   "dictionary.searchPlaceholder": "搜索原文、译文、翻译键、模组名或文件名...",
@@ -778,6 +807,17 @@ const zhCn: TranslationMap = {
   "settings.i18nDictTargetOnly": "仅目标语言为 zh_cn 时用于汉化参考；其他目标语言不会加载此词典。",
   "settings.i18nDictSource": "词典来源：{source}",
   "settings.i18nDictManifestUrl": "CraftLingo 词典 manifest 地址",
+  "settings.glossaryTitle": "术语库",
+  "settings.glossaryDescription": "从汉化库 glossary 目录拉取术语表；调用 API 翻译时优先采用术语表里的既有译名。",
+  "settings.glossaryCheck": "检查术语库更新",
+  "settings.glossaryUpdate": "更新术语库",
+  "settings.glossaryChecking": "正在检查...",
+  "settings.glossaryUpdating": "正在下载...",
+  "settings.glossaryMeta": "{files} 个文件 · {terms} 条术语",
+  "settings.glossaryEmpty": "尚未下载术语库",
+  "settings.glossaryUpToDate": "术语库已是最新",
+  "settings.glossaryUpdateAvailable": "发现术语库更新（{count} 个文件）",
+  "settings.glossaryUpdated": "术语库更新完成，可用 {terms} 条术语",
   "dashboard.localize.start": "自动汉化",
   "dashboard.localize.tooltip": "仅用词典生成汉化文件，不调用 AI",
   "dashboard.localize.export": "导出待翻译",
@@ -986,6 +1026,7 @@ const enUs: TranslationMap = {
   "nav.validate": "Validate",
   "nav.packages": "Pack",
   "nav.dictionary": "Dictionary",
+  "nav.glossary": "Glossary",
   "nav.settings": "Settings",
   "nav.logs": "Debug",
   "nav.collapse": "Collapse sidebar",
@@ -1066,6 +1107,25 @@ const enUs: TranslationMap = {
   "settings.i18nDictTargetOnly": "Only used when the target language is zh_cn; other target languages will not load this dictionary.",
   "settings.i18nDictSource": "Dictionary source: {source}",
   "settings.i18nDictManifestUrl": "CraftLingo dictionary manifest URL",
+  "dictionary.tabLocal": "Local dictionary",
+  "dictionary.tabReference": "Enhanced dictionary",
+  "dictionary.referenceSubtitle": "{total} reference entries (read-only, from CraftLingo-Dictionary)",
+  "dictionary.referenceEmpty": "No reference entries. Update the enhanced dictionary in Settings first.",
+  "glossary.subtitle": "{files} files · {terms} terms",
+  "glossary.searchPlaceholder": "Search source or target...",
+  "glossary.empty": "Glossary is empty. Update it in Settings first.",
+  "common.loadMore": "Load more",
+  "settings.glossaryTitle": "Glossary",
+  "settings.glossaryDescription": "Downloads the glossary folder from the translation repository. API translation prefers existing glossary names.",
+  "settings.glossaryCheck": "Check glossary",
+  "settings.glossaryUpdate": "Update glossary",
+  "settings.glossaryChecking": "Checking...",
+  "settings.glossaryUpdating": "Downloading...",
+  "settings.glossaryMeta": "{files} files · {terms} terms",
+  "settings.glossaryEmpty": "Glossary not downloaded yet",
+  "settings.glossaryUpToDate": "Glossary is up to date",
+  "settings.glossaryUpdateAvailable": "Glossary update available ({count} files)",
+  "settings.glossaryUpdated": "Glossary updated: {terms} terms",
   "dashboard.localize.start": "Auto localize",
   "dashboard.localize.tooltip": "Generate translations from the dictionary only, without calling AI",
   "dashboard.localize.export": "Export untranslated",
@@ -1378,6 +1438,10 @@ const jaJp: TranslationMap = {
   "nav.validate": "検証",
   "nav.packages": "パック",
   "nav.dictionary": "辞書",
+  "nav.glossary": "用語集",
+  "glossary.subtitle": "{files} ファイル · {terms} 件の用語",
+  "glossary.searchPlaceholder": "原文または訳文を検索...",
+  "glossary.empty": "用語集が空です。設定で更新してください。",
   "nav.settings": "設定",
   "nav.logs": "デバッグ",
   "nav.collapse": "サイドバーを折りたたむ",
@@ -1449,6 +1513,17 @@ const jaJp: TranslationMap = {
   "settings.i18nDictTargetOnly": "対象言語が zh_cn の場合のみ参照します。他の対象言語では読み込みません。",
   "settings.i18nDictSource": "辞書ソース: {source}",
   "settings.i18nDictManifestUrl": "CraftLingo 辞書の manifest URL",
+  "settings.glossaryTitle": "用語集",
+  "settings.glossaryDescription": "翻訳リポジトリの glossary フォルダーから用語集を取得します。API 翻訳では既存の訳語を優先します。",
+  "settings.glossaryCheck": "用語集を確認",
+  "settings.glossaryUpdate": "用語集を更新",
+  "settings.glossaryChecking": "確認中...",
+  "settings.glossaryUpdating": "ダウンロード中...",
+  "settings.glossaryMeta": "{files} ファイル · {terms} 用語",
+  "settings.glossaryEmpty": "用語集は未ダウンロードです",
+  "settings.glossaryUpToDate": "用語集は最新です",
+  "settings.glossaryUpdateAvailable": "用語集の更新があります（{count} ファイル）",
+  "settings.glossaryUpdated": "用語集を更新しました：{terms} 用語",
   "dashboard.localize.start": "自動ローカライズ",
   "dashboard.localize.tooltip": "辞書のみで翻訳ファイルを生成し、AI は呼び出しません",
   "dashboard.localize.export": "未翻訳をエクスポート",
@@ -1811,6 +1886,10 @@ const koKr: TranslationMap = {
   "nav.validate": "검증",
   "nav.packages": "패킹",
   "nav.dictionary": "사전",
+  "nav.glossary": "용어집",
+  "glossary.subtitle": "{files}개 파일 · {terms}개 용어",
+  "glossary.searchPlaceholder": "원문 또는 번역문 검색...",
+  "glossary.empty": "용어집이 비어 있습니다. 설정에서 업데이트하세요.",
   "nav.settings": "설정",
   "nav.logs": "디버그",
   "nav.collapse": "사이드바 접기",
@@ -1882,6 +1961,17 @@ const koKr: TranslationMap = {
   "settings.i18nDictTargetOnly": "대상 언어가 zh_cn일 때만 참고 사전으로 사용하며, 다른 대상 언어에서는 로드하지 않습니다.",
   "settings.i18nDictSource": "사전 소스: {source}",
   "settings.i18nDictManifestUrl": "CraftLingo 사전 manifest URL",
+  "settings.glossaryTitle": "용어집",
+  "settings.glossaryDescription": "번역 저장소의 glossary 폴더에서 용어집을 가져옵니다. API 번역 시 기존 번역어를 우선 사용합니다.",
+  "settings.glossaryCheck": "용어집 확인",
+  "settings.glossaryUpdate": "용어집 업데이트",
+  "settings.glossaryChecking": "확인 중...",
+  "settings.glossaryUpdating": "다운로드 중...",
+  "settings.glossaryMeta": "파일 {files}개 · 용어 {terms}개",
+  "settings.glossaryEmpty": "용어집이 아직 없습니다",
+  "settings.glossaryUpToDate": "용어집이 최신입니다",
+  "settings.glossaryUpdateAvailable": "용어집 업데이트 있음 ({count}개 파일)",
+  "settings.glossaryUpdated": "용어집 업데이트 완료: {terms}개 용어",
   "dashboard.localize.start": "자동 번역",
   "dashboard.localize.tooltip": "사전만으로 번역 파일을 생성하며 AI를 호출하지 않습니다",
   "dashboard.localize.export": "미번역 내보내기",
@@ -2246,6 +2336,10 @@ const ruRu: TranslationMap = {
   "nav.validate": "Проверка",
   "nav.packages": "Упаковка",
   "nav.dictionary": "Словарь",
+  "nav.glossary": "Глоссарий",
+  "glossary.subtitle": "Файлов: {files} · терминов: {terms}",
+  "glossary.searchPlaceholder": "Поиск по оригиналу или переводу...",
+  "glossary.empty": "Глоссарий пуст. Обновите его в настройках.",
   "nav.settings": "Настройки",
   "nav.logs": "Отладка",
   "nav.collapse": "Свернуть панель",
@@ -2393,6 +2487,17 @@ const ruRu: TranslationMap = {
   "settings.i18nDictTargetOnly": "Используется только при целевом языке zh_cn; для других языков этот словарь не загружается.",
   "settings.i18nDictSource": "Источник словаря: {source}",
   "settings.i18nDictManifestUrl": "URL manifest словаря CraftLingo",
+  "settings.glossaryTitle": "Глоссарий",
+  "settings.glossaryDescription": "Загружает папку glossary из репозитория переводов. При переводе через API приоритет отдаётся существующим терминам.",
+  "settings.glossaryCheck": "Проверить глоссарий",
+  "settings.glossaryUpdate": "Обновить глоссарий",
+  "settings.glossaryChecking": "Проверка...",
+  "settings.glossaryUpdating": "Загрузка...",
+  "settings.glossaryMeta": "Файлов: {files} · терминов: {terms}",
+  "settings.glossaryEmpty": "Глоссарий ещё не загружен",
+  "settings.glossaryUpToDate": "Глоссарий актуален",
+  "settings.glossaryUpdateAvailable": "Доступно обновление глоссария ({count} файлов)",
+  "settings.glossaryUpdated": "Глоссарий обновлён: терминов {terms}",
   "dashboard.localize.start": "Автолокализация",
   "dashboard.localize.tooltip": "Создать переводы только из словаря, без вызова ИИ",
   "dashboard.localize.export": "Экспорт непереведённых",

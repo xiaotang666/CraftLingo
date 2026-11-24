@@ -48,43 +48,24 @@
     <td width="50%">
       <img src="docs/readme/screenshots/01-scan-overview.png" alt="项目扫描概览" width="100%" />
       <br />
-      <sub>扫描概览：展示模组、资源文件、待翻译条目和词典缓存命中。</sub>
+      <sub>扫描概览：选择 Minecraft 实例并启动全自动流程，查看模组、语言资源与待翻译条目。</sub>
     </td>
-    <td width="50%">
-      <img src="docs/readme/screenshots/02-translation-jobs.png" alt="翻译任务" width="100%" />
-      <br />
-      <sub>翻译任务：展示翻译吞吐、词典命中、已有翻译、跳过条目和 LLM 调用结果。</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%">
-      <img src="docs/readme/screenshots/03-review-editor.png" alt="校对编辑器" width="100%" />
-      <br />
-      <sub>校对工作台：逐条查看原文和译文，支持复制原文、调用 LLM 重译和人工保存。</sub>
-    </td>
-    <td width="50%">
-      <img src="docs/readme/screenshots/04-packaging.png" alt="资源包打包" width="100%" />
-      <br />
-      <sub>资源包打包：按 mod 汇总可输出条目，生成可直接放入 <code>resourcepacks/</code> 的资源包。</sub>
-    </td>
-  </tr>
-  <tr>
     <td width="50%">
       <img src="docs/readme/screenshots/05-dictionary-management.png" alt="词典管理" width="100%" />
       <br />
-      <sub>词典管理：搜索、编辑、删除、导入和导出翻译缓存，维护整合包长期术语资产。</sub>
-    </td>
-    <td width="50%">
-      <img src="docs/readme/screenshots/06-performance-settings.png" alt="性能设置" width="100%" />
-      <br />
-      <sub>性能设置：维护翻译并发池、批大小、超时、重试和速率限制。</sub>
+      <sub>词典管理：搜索、编辑、导入和导出翻译缓存，维护整合包长期术语资产。</sub>
     </td>
   </tr>
   <tr>
-    <td colspan="2">
-      <img src="docs/readme/screenshots/07-resource-reuse.png" alt="资源复用设置" width="100%" />
+    <td width="50%">
+      <img src="docs/readme/screenshots/08-glossary.png" alt="术语库" width="100%" />
       <br />
-      <sub>资源复用：管理 i18n 参考词典、已有汉化资源包和输出资源包命名规则。</sub>
+      <sub>术语库：浏览从汉化库同步的术语条目，支持搜索与分页，API 翻译时优先采用既有译名。</sub>
+    </td>
+    <td width="50%">
+      <img src="docs/readme/screenshots/06-performance-settings.png" alt="设置中心" width="100%" />
+      <br />
+      <sub>设置中心：配置语言、API、性能参数与资源复用选项。</sub>
     </td>
   </tr>
 </table>

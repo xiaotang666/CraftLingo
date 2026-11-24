@@ -20,6 +20,23 @@ struct DictDownloadProgress {
     percent: Option<u8>,
 }
 
+/// 增强词典（参考词条）单条记录，只读展示。
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReferenceDictEntry {
+    pub source_text: String,
+    pub target_text: String,
+    pub mod_id: String,
+    pub key: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReferenceDictPage {
+    pub total: usize,
+    pub entries: Vec<ReferenceDictEntry>,
+}
+
 /// Default manifest URL for the dictionary repository.
 /// Uses jsDelivr because raw.githubusercontent.com is unreliable in mainland China.
 /// The URL can be overridden by `Settings.i18nDictManifestUrl` or the
@@ -149,8 +166,69 @@ pub async fn update_i18n_dict(app: tauri::AppHandle) -> Result<I18nDictUpdateRes
         .map_err(|e| format!("更新 i18n 模组词典线程崩溃: {e}"))?
 }
 
-fn update_i18n_dict_blocking(app: &tauri::AppHandle) -> Result<I18nDictUpdateResult, String> {
-    let root = paths::runtime_root().map_err(|e| e.to_string())?;
+/// 分页查询增强词典（只读），供词典页浏览。
+#[tauri::command]
+pub async fn query_reference_dict(
+    query: String,
+    offset: u32,
+    limit: u32,
+) -> Result<ReferenceDictPage, String> {
+    tauri::async_runtime::spawn_blocking(move || -> Result<ReferenceDictPage, String> {
+        let root = paths::runtime_root().map_err(|e| e.to_string())?;
+        let db_path = root.join("data").join("i18n-dict").join("Dict-Sqlite.db");
+        if !db_path.is_file() {
+            return Ok(ReferenceDictPage { total: 0, entries: Vec::new() });
+        }
+        let conn = Connection::open_with_flags(
+            &db_path,
+            rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+        )
+        .map_err(|e| format!("打开增强词典失败: {e}"))?;
+        let escaped = query
+            .trim()
+            .replace('\\', "\\\\")
+            .replace('%', "\\%")
+            .replace('_', "\\_");
+        let pattern = format!("%{escaped}%");
+        let filter = "(ORIGIN_NAME LIKE ?1 ESCAPE '\\' OR TRANS_NAME LIKE ?1 ESCAPE '\\')";
+        let total: i64 = conn
+            .query_row(
+                &format!("SELECT COUNT(*) FROM dict WHERE {filter}"),
+                rusqlite::params![pattern],
+                |row| row.get(0),
+            )
+            .map_err(|e| format!("统计增强词典失败: {e}"))?;
+        let limit = limit.clamp(1, 500);
+        let mut stmt = conn
+            .prepare(&format!(
+                "SELECT ORIGIN_NAME, TRANS_NAME, MODID, KEY FROM dict WHERE {filter} ORDER BY ID LIMIT ?2 OFFSET ?3"
+            ))
+            .map_err(|e| format!("准备增强词典查询失败: {e}"))?;
+        let entries = stmt
+            .query_map(
+                rusqlite::params![pattern, limit, offset],
+                |row| {
+                    Ok(ReferenceDictEntry {
+                        source_text: row.get(0)?,
+                        target_text: row.get(1)?,
+                        mod_id: row.get(2)?,
+                        key: row.get(3)?,
+                    })
+                },
+            )
+            .map_err(|e| format!("查询增强词典失败: {e}"))?
+            .filter_map(Result::ok)
+            .collect();
+        Ok(ReferenceDictPage {
+            total: total.max(0) as usize,
+            entries,
+        })
+    })
+    .await
+    .map_err(|e| format!("查询增强词典线程崩溃: {e}"))?
+}
+
+fn update_i18n_dict_blocking(app: &tauri::AppHandle) -> Result<I18nDictUpdateResult, String> {    let root = paths::runtime_root().map_err(|e| e.to_string())?;
     let settings = settings::load_settings(&root).unwrap_or_default();
     let source = resolve_source(&settings)?;
     let conn = dictionary::open(&paths::dictionary_db_path(&root)).map_err(|e| e.to_string())?;

@@ -48,43 +48,24 @@ It is useful when:
     <td width="50%">
       <img src="docs/readme/screenshots/01-scan-overview.png" alt="Scan overview" width="100%" />
       <br />
-      <sub>Scan overview: summarizes mods, language resources, pending entries, and dictionary-cache hits.</sub>
+      <sub>Scan overview: pick a Minecraft instance, start the automated pipeline, and review mods, language resources, and pending entries.</sub>
     </td>
-    <td width="50%">
-      <img src="docs/readme/screenshots/02-translation-jobs.png" alt="Translation jobs" width="100%" />
-      <br />
-      <sub>Translation jobs: track throughput, dictionary hits, existing translations, skipped entries, and LLM results.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%">
-      <img src="docs/readme/screenshots/03-review-editor.png" alt="Review editor" width="100%" />
-      <br />
-      <sub>Review workspace: compare source and translated text, copy source, retranslate with LLM, and save manual edits.</sub>
-    </td>
-    <td width="50%">
-      <img src="docs/readme/screenshots/04-packaging.png" alt="Resource-pack packaging" width="100%" />
-      <br />
-      <sub>Packaging: group output by mod and generate a resource pack that can be placed in <code>resourcepacks/</code>.</sub>
-    </td>
-  </tr>
-  <tr>
     <td width="50%">
       <img src="docs/readme/screenshots/05-dictionary-management.png" alt="Dictionary management" width="100%" />
       <br />
-      <sub>Dictionary management: search, edit, delete, import, and export translation cache for long-term terminology maintenance.</sub>
-    </td>
-    <td width="50%">
-      <img src="docs/readme/screenshots/06-performance-settings.png" alt="Performance settings" width="100%" />
-      <br />
-      <sub>Performance settings: tune the translation concurrency pool, batch size, timeout, retries, and rate limits.</sub>
+      <sub>Dictionary management: search, edit, import, and export the translation cache for long-term terminology maintenance.</sub>
     </td>
   </tr>
   <tr>
-    <td colspan="2">
-      <img src="docs/readme/screenshots/07-resource-reuse.png" alt="Resource reuse settings" width="100%" />
+    <td width="50%">
+      <img src="docs/readme/screenshots/08-glossary.png" alt="Glossary" width="100%" />
       <br />
-      <sub>Resource reuse: manage the i18n reference dictionary, existing localization resource packs, and output resource-pack naming.</sub>
+      <sub>Glossary: browse terminology synced from the localization repository with search and paging; API translation prefers existing translations.</sub>
+    </td>
+    <td width="50%">
+      <img src="docs/readme/screenshots/06-performance-settings.png" alt="Settings" width="100%" />
+      <br />
+      <sub>Settings: configure language, API, performance options, and resource reuse.</sub>
     </td>
   </tr>
 </table>

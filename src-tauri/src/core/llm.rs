@@ -143,7 +143,9 @@ impl LlmClient {
             model = %self.model,
             "LLM batch 开始翻译"
         );
-        let prompt = build_prompt(entries, source_lang, target_lang);
+        let texts: Vec<&str> = entries.iter().map(|entry| entry.text.as_str()).collect();
+        let glossary = crate::core::glossary::match_terms(&texts);
+        let prompt = build_prompt(entries, source_lang, target_lang, &glossary);
 
         let mut body = serde_json::json!({
             "model": self.model,
@@ -288,7 +290,12 @@ fn try_single_request(
 }
 
 /// Build a structured prompt for the LLM from a batch of entries.
-fn build_prompt(entries: &[TranslationEntry], source_lang: &str, target_lang: &str) -> String {
+fn build_prompt(
+    entries: &[TranslationEntry],
+    source_lang: &str,
+    target_lang: &str,
+    glossary: &[(String, String)],
+) -> String {
     fn lang_label(code: &str) -> &str {
         match code {
             "zh_cn" => "简体中文",
@@ -308,6 +315,19 @@ fn build_prompt(entries: &[TranslationEntry], source_lang: &str, target_lang: &s
     }
 
     let mod_context = build_mod_context(entries);
+
+    let glossary_block = if glossary.is_empty() {
+        String::new()
+    } else {
+        let lines: Vec<String> = glossary
+            .iter()
+            .map(|(source, target)| format!("- \"{source}\" → \"{target}\""))
+            .collect();
+        format!(
+            "术语表（以下既有译名必须优先采用，保持一致）：\n{}\n\n",
+            lines.join("\n")
+        )
+    };
 
     let entries_json = serde_json::to_string_pretty(
         &entries
@@ -334,7 +354,7 @@ fn build_prompt(entries: &[TranslationEntry], source_lang: &str, target_lang: &s
     let prompt = format!(
         r#"请将以下 Minecraft 模组文本从 {source_label} ({source_lang}) 翻译为 {target_label} ({target_lang})。
 
-{mod_context}规则：
+{mod_context}{glossary_block}规则：
 1. 输入文本中的格式代码已被替换为 __SHIELD_0__、__SHIELD_1__ 等标记，你必须**完全保留**这些标记的原样（包括数字后缀）
    - 这些标记包含 § 颜色/格式码（§b=淡蓝色、§r=重置、§l=加粗、§o=斜体），它们控制文字外观，不是装饰
    - 删除它们会导致游戏内文字丢失颜色和格式，不同段落混在一起无法辨认
@@ -352,6 +372,7 @@ fn build_prompt(entries: &[TranslationEntry], source_lang: &str, target_lang: &s
         source_lang = source_lang,
         target_lang = target_lang,
         mod_context = mod_context,
+        glossary_block = glossary_block,
         entries_json = entries_json,
     );
 
@@ -801,7 +822,7 @@ mod tests {
             references: Vec::new(),
         }];
 
-        let prompt = build_prompt(&entries, "en_us", "zh_cn");
+        let prompt = build_prompt(&entries, "en_us", "zh_cn", &[]);
 
         assert!(prompt.contains("模组：scguns"));
         assert!(prompt.contains("不要额外添加书名号"));
@@ -834,7 +855,7 @@ mod tests {
             },
         ];
 
-        let prompt = build_prompt(&entries, "en_us", "zh_cn");
+        let prompt = build_prompt(&entries, "en_us", "zh_cn", &[]);
 
         assert!(prompt.contains("\"references\""));
         assert!(prompt.contains("Oak Table → 橡木桌"));

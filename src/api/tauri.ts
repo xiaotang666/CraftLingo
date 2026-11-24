@@ -217,6 +217,89 @@ export async function checkI18nDictUpdate(): Promise<I18nDictUpdateInfo> {
   return tauriInvoke<I18nDictUpdateInfo>("check_i18n_dict_update");
 }
 
+export type GlossaryStatus = {
+  installed: boolean;
+  files: number;
+  terms: number;
+  updatedAt: string;
+  repo: string;
+  branch: string;
+};
+
+export type GlossaryCheckResult = {
+  upToDate: boolean;
+  changedFiles: number;
+  remoteFiles: number;
+};
+
+export async function glossaryStatus(): Promise<GlossaryStatus> {  if (!isTauriRuntime()) {
+    throw new Error("Not available in browser preview mode");
+  }
+  return tauriInvoke<GlossaryStatus>("glossary_status");
+}
+
+export async function checkGlossaryUpdate(): Promise<GlossaryCheckResult> {
+  if (!isTauriRuntime()) {
+    throw new Error("Not available in browser preview mode");
+  }
+  return tauriInvoke<GlossaryCheckResult>("check_glossary_update");
+}
+
+export async function updateGlossary(): Promise<GlossaryStatus> {
+  if (!isTauriRuntime()) {
+    throw new Error("Not available in browser preview mode");
+  }
+  return tauriInvoke<GlossaryStatus>("update_glossary");
+}
+
+export type GlossaryTerm = {
+  source: string;
+  target: string;
+};
+
+export type GlossaryTermPage = {
+  total: number;
+  entries: GlossaryTerm[];
+};
+
+export async function listGlossaryTerms(
+  query: string,
+  offset: number,
+  limit: number,
+): Promise<GlossaryTermPage> {
+  if (!isTauriRuntime()) {
+    throw new Error("Not available in browser preview mode");
+  }
+  return tauriInvoke<GlossaryTermPage>("list_glossary_terms", {
+    query: query || null,
+    offset,
+    limit,
+  });
+}
+
+export type ReferenceDictEntry = {
+  sourceText: string;
+  targetText: string;
+  modId: string;
+  key: string;
+};
+
+export type ReferenceDictPage = {
+  total: number;
+  entries: ReferenceDictEntry[];
+};
+
+export async function queryReferenceDict(
+  query: string,
+  offset = 0,
+  limit = 200,
+): Promise<ReferenceDictPage> {
+  if (!isTauriRuntime()) {
+    throw new Error("Not available in browser preview mode");
+  }
+  return tauriInvoke<ReferenceDictPage>("query_reference_dict", { query, offset, limit });
+}
+
 export type DictDownloadProgress = {
   phase: "full" | "increment";
   downloaded: number;

@@ -5,6 +5,7 @@
 pub mod dictionary;
 pub mod fonts;
 pub mod game;
+pub mod glossary;
 pub mod i18n_dict;
 pub mod jobs;
 pub mod llm;
@@ -20,6 +21,7 @@ pub mod warmup;
 pub use dictionary::*;
 pub use fonts::*;
 pub use game::*;
+pub use glossary::*;
 pub use i18n_dict::*;
 pub use jobs::*;
 pub use llm::*;

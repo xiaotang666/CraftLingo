@@ -7,6 +7,7 @@ import {
   FileSearch,
   FileText,
   Home,
+  Languages,
   Loader2,
   Moon,
   ScanLine,
@@ -18,13 +19,14 @@ import type { LucideIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DashboardPage, type DashboardPageHandle } from "../pages/DashboardPage";
 import { DictionaryPage } from "../pages/DictionaryPage";
+import { GlossaryPage } from "../pages/GlossaryPage";
 import { JobsPage, type JobsPageHandle } from "../pages/JobsPage";
 import { LogsPage } from "../pages/LogsPage";
 import { PackagesPage, type PackagesPageHandle } from "../pages/PackagesPage";
 import { SplashScreen } from "../components/SplashScreen";
 import { applyFont, SettingsPage } from "../pages/SettingsPage";
 import { ValidatePage, type ValidatePageHandle } from "../pages/ValidatePage";
-import { getAppVersion, getSettings, runWarmup, saveSettings } from "../api/tauri";
+import { checkGlossaryUpdate, getAppVersion, getSettings, runWarmup, saveSettings } from "../api/tauri";
 import { AppProvider, useAppState } from "./AppContext";
 import { localeByAppLanguage, normalizeAppLanguage, t } from "../i18n/translations";
 import type { TranslationKey } from "../i18n/translations";
@@ -50,12 +52,13 @@ const navItems: NavItem[] = [
   { key: "validate", labelKey: "nav.validate", icon: FileSearch },
   { key: "packages", labelKey: "nav.packages", icon: Boxes },
   { key: "dictionary", labelKey: "nav.dictionary", icon: BookOpen },
+  { key: "glossary", labelKey: "nav.glossary", icon: Languages },
   { key: "settings", labelKey: "nav.settings", icon: SettingsIcon },
   { key: "logs", labelKey: "nav.logs", icon: Home },
 ];
 
 const ALL_PAGE_KEYS: PageKey[] = [
-  "dashboard", "settings", "logs", "dictionary",
+  "dashboard", "settings", "logs", "dictionary", "glossary",
   "jobs", "validate", "packages",
 ];
 
@@ -188,6 +191,11 @@ function AppShell() {
       .then((s) => dispatch({ type: "SET_SETTINGS", payload: s }))
       .catch((error) => console.warn("getSettings failed:", error));
   }, [dispatch]);
+
+  // 每次启动静默检查术语库是否有更新，结果在设置页展示
+  useEffect(() => {
+    checkGlossaryUpdate().catch((error) => console.warn("checkGlossaryUpdate failed:", error));
+  }, []);
 
   useEffect(() => () => {
     if (autoClearTimerRef.current !== null) {
@@ -528,6 +536,8 @@ function AppShell() {
         return <LogsPage language={language} />;
       case "dictionary":
         return <DictionaryPage language={language} />;
+      case "glossary":
+        return <GlossaryPage language={language} />;
       case "jobs":
         return <JobsPage ref={jobsRef} isActive={activePage === page} language={language} scanSummary={scanSummary} onScanSummaryChange={handleScanSummaryChange} settings={settings!} onBusyChange={jobsBusy} onCompleteChange={jobsCompleted} autoLocked={isAutoLocked} />;
       case "validate":

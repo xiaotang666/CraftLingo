@@ -55,10 +55,9 @@ function Initialize-SigningKey {
     if (-not (Test-Path $KeyPath)) { throw "找不到签名私钥：$KeyPath" }
     $env:TAURI_SIGNING_PRIVATE_KEY = (Get-Content -Raw $KeyPath).Trim()
   }
-  if (-not $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD) {
-    $secure = Read-Host "请输入签名私钥密码" -AsSecureString
-    $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
-      [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure))
+  # 私钥未加密时不需要密码；仅在外部已提供时才使用
+  if ($env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD -eq "") {
+    Remove-Item Env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD -ErrorAction SilentlyContinue
   }
 }
 
@@ -81,11 +80,42 @@ if (-not (Test-Path $sig)) {
   Initialize-SigningKey
   Write-Host "==> 补签安装包..." -ForegroundColor Cyan
   $signer = Join-Path $root "node_modules/.bin/tauri.cmd"
-  & $signer signer sign -f $KeyPath -p $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD $exe
-  if ($LASTEXITCODE -ne 0 -or -not (Test-Path $sig)) { throw "签名失败" }
+  $signArgs = @("signer", "sign", "-f", $KeyPath)
+  if ($env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD) { $signArgs += @("-p", $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD) }
+  $signArgs += $exe
+  $sigText = (& $signer @signArgs 2>$null | Out-String).Trim()
+  if (-not $sigText) { throw "签名失败" }
+  [IO.File]::WriteAllText($sig, $sigText, (New-Object Text.UTF8Encoding($false)))
 }
 
-# ── 3. 整理产物到资产目录 ───────────────────────────────────
+# ── 3. 整理产物到资产目录（先归档旧版本） ──────────────────
+$archiveRoot = Join-Path (Split-Path $assetDir -Parent) "旧版本资产归档"
+
+function Move-OldAssets {
+  if (-not (Test-Path $assetDir)) { return }
+  Get-ChildItem $assetDir -File | ForEach-Object {
+    $match = [regex]::Match($_.Name, '(\d+\.\d+\.\d+)')
+    if (-not $match.Success) { return }
+    $fileVersion = $match.Groups[1].Value
+    if ($fileVersion -eq $Version) { return }
+    $dest = Join-Path $archiveRoot "v$fileVersion"
+    New-Item -ItemType Directory -Force -Path $dest | Out-Null
+    Move-Item $_.FullName $dest -Force
+    Write-Host "==> 归档旧资产 $($_.Name) -> v$fileVersion" -ForegroundColor DarkGray
+  }
+  if (Test-Path $archiveRoot) {
+    Get-ChildItem $archiveRoot -Directory |
+      Where-Object { $_.Name -match '^v\d+\.\d+\.\d+$' } |
+      Sort-Object { [version]($_.Name.TrimStart('v')) } -Descending |
+      Select-Object -Skip 5 |
+      ForEach-Object {
+        Remove-Item $_.FullName -Recurse -Force
+        Write-Host "==> 清理过期归档 $($_.Name)" -ForegroundColor DarkGray
+      }
+  }
+}
+
+if (-not $DryRun) { Move-OldAssets }
 if (-not (Test-Path $assetDir)) { New-Item -ItemType Directory -Path $assetDir | Out-Null }
 Copy-Item $exe (Join-Path $assetDir $setupName) -Force
 Copy-Item $sig (Join-Path $assetDir "$setupName.sig") -Force
@@ -110,7 +140,8 @@ $payload = [ordered]@{
   platforms = [ordered]@{
     "windows-x86_64" = [ordered]@{
       signature = $signature
-      url       = "https://github.com/$Repo/releases/download/$tag/$setupName"
+      # 走镜像下载，国内网络可用；签名校验保证完整性
+      url       = "https://ghfast.top/https://github.com/$Repo/releases/download/$tag/$setupName"
     }
   }
 }
@@ -136,8 +167,19 @@ if ($DryRun) {
 # ── 5. 取得 GitHub 凭据 ─────────────────────────────────────
 $token = $env:GITHUB_TOKEN
 if (-not $token) {
-  $cred = "protocol=https`nhost=github.com`n`n" | git credential fill 2>$null
-  $line = $cred | Where-Object { $_ -like "password=*" }
+  $psi = New-Object System.Diagnostics.ProcessStartInfo
+  $psi.FileName = "git"
+  $psi.Arguments = "credential fill"
+  $psi.RedirectStandardInput = $true
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError = $true
+  $psi.UseShellExecute = $false
+  $proc = [System.Diagnostics.Process]::Start($psi)
+  $proc.StandardInput.Write("protocol=https`nhost=github.com`n`n")
+  $proc.StandardInput.Close()
+  $credOut = $proc.StandardOutput.ReadToEnd()
+  $proc.WaitForExit()
+  $line = ($credOut -split "`n") | Where-Object { $_ -like "password=*" }
   if ($line) { $token = ($line -replace '^password=', '').Trim() }
 }
 if (-not $token) {
@@ -162,14 +204,15 @@ catch {
 }
 
 if (-not $release) {
-  $body = @{
+  $bodyObj = @{
     tag_name   = $tag
     name       = "方块译匠 · CraftLingo $tag"
     body       = $(if ($Notes) { $Notes } else { "方块译匠 · CraftLingo $tag" })
     draft      = $false
     prerelease = $false
-  } | ConvertTo-Json
-  $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases" -Headers $headers -Method Post -Body $body -ContentType "application/json"
+  }
+  $bodyBytes = [Text.Encoding]::UTF8.GetBytes(($bodyObj | ConvertTo-Json))
+  $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases" -Headers $headers -Method Post -Body $bodyBytes -ContentType "application/json; charset=utf-8"
   Write-Host "==> 已创建 Release $tag" -ForegroundColor Green
 }
 

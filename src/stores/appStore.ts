@@ -9,7 +9,7 @@ import { persist } from "zustand/middleware";
 import type { PageNavStatus, ScanSummary, Settings } from "../types";
 
 export type PageKey =
-  | "dashboard" | "jobs" | "validate" | "dictionary"
+  | "dashboard" | "jobs" | "validate" | "dictionary" | "glossary"
   | "packages" | "settings" | "logs";
 
 export type TranslationPageStatus = "idle" | "running" | "completed" | "canceled" | "failed";

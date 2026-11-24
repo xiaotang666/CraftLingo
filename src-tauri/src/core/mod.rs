@@ -1,4 +1,5 @@
 pub mod dictionary;
+pub mod glossary;
 pub mod i18n_sync;
 pub mod jobs;
 pub mod llm;
