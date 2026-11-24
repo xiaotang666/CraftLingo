@@ -1,7 +1,44 @@
-# 构建产物
+# Agent/app state (only ignore ephemeral runtime data)
+.pi/
+.until-done/
+.codex/
+.claude/worktrees/
+.claude/tmp/
+.omc/
+src-tauri/.omc/
+.playwright-mcp/
+.agents/
+
+# Build outputs
 dist/
-vm/
+build/
+target/
+src-tauri/target/
+
+# Dependencies
+node_modules/
 
 # Python
 __pycache__/
 *.py[cod]
+
+# Runtime data
+logs/
+data/
+*.log
+
+# Local settings and secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# Temporary/project notes
+brainstorms/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+nul
