@@ -556,7 +556,7 @@ function AppShell() {
       case "dictionary":
         return <DictionaryPage language={language} />;
       case "glossary":
-        return <GlossaryPage language={language} />;
+        return <GlossaryPage language={language} isActive={activePage === page} />;
       case "jobs":
         return <JobsPage ref={jobsRef} isActive={activePage === page} language={language} scanSummary={scanSummary} onScanSummaryChange={handleScanSummaryChange} settings={settings!} onBusyChange={jobsBusy} onCompleteChange={jobsCompleted} autoLocked={isAutoLocked} />;
       case "validate":

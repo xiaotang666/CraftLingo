@@ -8,11 +8,12 @@ import type { AppLanguage } from "../types";
 
 interface Props {
   language: AppLanguage;
+  isActive?: boolean;
 }
 
 const GLOSSARY_PAGE_SIZE = 200;
 
-export function GlossaryPage({ language }: Props) {
+export function GlossaryPage({ language, isActive = true }: Props) {
   const [query, setQuery] = useState("");
   const [entries, setEntries] = useState<GlossaryTerm[]>([]);
   const [total, setTotal] = useState(0);
@@ -23,15 +24,6 @@ export function GlossaryPage({ language }: Props) {
   const [error, setError] = useState("");
   const debounced = useDebouncedValue(query, 300);
   const activeQuery = debounced.trim();
-
-  useEffect(() => {
-    glossaryStatus()
-      .then((status) => {
-        setFiles(status.files);
-        setTerms(status.terms);
-      })
-      .catch(() => {});
-  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -49,9 +41,17 @@ export function GlossaryPage({ language }: Props) {
     }
   }, [activeQuery]);
 
+  // 页面常驻挂载，仅在切换到术语库时重新读取，避免设置页更新后仍显示旧数据。
   useEffect(() => {
+    if (!isActive) return;
+    glossaryStatus()
+      .then((status) => {
+        setFiles(status.files);
+        setTerms(status.terms);
+      })
+      .catch(() => {});
     void load();
-  }, [load]);
+  }, [isActive, load]);
 
   const loadMore = useCallback(async () => {
     setLoadingMore(true);
