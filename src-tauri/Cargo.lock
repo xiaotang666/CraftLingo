@@ -660,7 +660,7 @@ dependencies = [
 
 [[package]]
 name = "craftlingo"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "chrono",
  "font-kit",

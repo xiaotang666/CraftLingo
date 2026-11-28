@@ -30,7 +30,7 @@ pub struct PackEntry {
     #[serde(default)]
     pub source_file: String,
     /// Translation origin (`llm`, `dictionary`, `existing`, `imported`, ...).
-    /// Used to annotate AI-generated entries in the generated language files.
+    /// Used to collect AI-generated entries into the report file.
     #[serde(default)]
     pub source_type: String,
 }
@@ -314,12 +314,8 @@ pub fn generate_pack(options: &PackOptions) -> io::Result<PackResult> {
         }
         for e in entries {
             lang_map.insert(e.key.clone(), e.text.clone());
-            // 为 AI 生成的条目追加注释键，便于后续人工复核；游戏不会引用该键。
+            // AI 条目只汇总到清单文件，不再向 lang JSON 追加注释键。
             if e.source_type == "llm" {
-                lang_map.insert(
-                    format!("{}.__ai_note", e.key),
-                    format!("AI 生成 | 原文: {} | 建议人工复核", e.source_text),
-                );
                 ai_entries.push((
                     rel_path.clone(),
                     e.mod_id.clone(),
@@ -708,7 +704,7 @@ mod tests {
     }
 
     #[test]
-    fn pack_annotates_llm_entries_and_writes_report() {
+    fn pack_collects_llm_entries_into_report() {
         let tmp = std::env::temp_dir().join("packer-test-ai-note");
         let _ = std::fs::remove_dir_all(&tmp);
         let entries = vec![
@@ -750,10 +746,7 @@ mod tests {
             .unwrap();
         let value: serde_json::Value = serde_json::from_str(&lang).unwrap();
         assert_eq!(value["item.alpha.ai"], "AI译文");
-        assert!(value["item.alpha.ai.__ai_note"]
-            .as_str()
-            .unwrap()
-            .contains("AI 生成"));
+        assert!(value.get("item.alpha.ai.__ai_note").is_none());
         assert!(value.get("item.alpha.dict.__ai_note").is_none());
 
         let report = std::fs::read_to_string(tmp.join("AI生成条目.txt")).unwrap();
